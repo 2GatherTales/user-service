@@ -1,8 +1,6 @@
 package com.joaogsrocha._SpringREST.controller;
 
-import com.google.gson.Gson;
 import com.joaogsrocha._SpringREST.model.CustomPrincipal;
-import com.joaogsrocha._SpringREST.model.roleuser.RoleUser;
 import com.joaogsrocha._SpringREST.model.user.User;
 import com.joaogsrocha._SpringREST.services.implementation.RoleUserServiceImpl;
 import com.joaogsrocha._SpringREST.services.implementation.UserServiceImpl;
@@ -11,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -29,6 +28,8 @@ public class UserController {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     public static final String DATE_FORMAT_NOW = "yyyy-MM-dd HH:mm:ss";
 
@@ -88,31 +89,23 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<User> create(@RequestBody User user) {
         try {
-            //TODO: Make a check to see if UserPoints Service is alive or not. It not exception/cancel creation.
-            // /userpoints/health is the endpoint to check
-            User nuser = userRepository.create(user);
-            RoleUser nroleUser = new RoleUser();
-            nroleUser.setUserid(user.getId());
-            nroleUser.setRoleid(Long.parseLong("2"));
-            roleUserRepository.create(nroleUser);
-
             restTemplate = new RestTemplate();
+            // Check if userpoints service is healthy /health
+            restTemplate.getForObject("http://localhost:9002/api/userpoints/health", String.class );
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             JSONObject personJsonObject = new JSONObject();
-            personJsonObject.put("userid", user.getId());
-
-            HttpEntity<String> request =
-                    new HttpEntity<String>(personJsonObject.toString(), headers);
-
-
-
-            String personResultAsJsonStr =
-                    restTemplate.postForObject("http://localhost:9002/api/userpoints/create/"+user.getId(), request, String.class );
-            System.out.print(new Gson().toJson(nuser).toString());
+            User nuser = userRepository.create(user);
+            int userid = Math.toIntExact(nuser.getId());
+            personJsonObject.put("userid", userid);
+            HttpEntity<String> request = new HttpEntity<String>(personJsonObject.toString(), headers);
+            // Associate userid of newly created user to its userpoints Entity
+            restTemplate.postForObject("http://localhost:9002/api/userpoints/create/"+userid, request, String.class );
             return new ResponseEntity<User>(nuser,
                     HttpStatus.OK);
         } catch (Exception e) {
+            System.out.println(e);
             return new ResponseEntity<User>(
                     HttpStatus.BAD_REQUEST);
         }

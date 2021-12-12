@@ -1,6 +1,5 @@
 package com.joaogsrocha._SpringREST.model.user;
 
-import com.joaogsrocha._SpringREST.model.voucheruser.VoucherUser;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
@@ -28,8 +27,6 @@ public class User implements Serializable {
     private String pw;
     @Column(name = "email")
     private String email;
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "user")
-    private VoucherUser voucherUser;
 
     @Column(name = "enabled", columnDefinition = "int2")
     @Type(type = "org.hibernate.type.NumericBooleanType")

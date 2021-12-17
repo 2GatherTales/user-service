@@ -39,3 +39,4 @@ out/
 *.idea
 *.yml
 *.properties
+!gradle-wrapper.properties

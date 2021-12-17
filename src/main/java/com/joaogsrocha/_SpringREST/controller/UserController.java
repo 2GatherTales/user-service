@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -28,8 +27,7 @@ public class UserController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
+
 
     public static final String DATE_FORMAT_NOW = "yyyy-MM-dd HH:mm:ss";
 
@@ -70,16 +68,16 @@ public class UserController {
     }
 
     @GetMapping("/find/{id}")
-    @PreAuthorize("hasAuthority('role_user')")
+    @PreAuthorize("hasAnyAuthority('role_admin', 'role_user')")
     public ResponseEntity<User> find(@PathVariable("id") Long id) {
         try {
             CustomPrincipal principal = (CustomPrincipal) SecurityContextHolder.getContext().getAuthentication()
                     .getPrincipal();
-            if(!principal.getId().equals(String.valueOf(id)))
+            if(principal.getId().equals(String.valueOf(id)) ||  (principal.getUsername().equals("admin")))
                 return new ResponseEntity<User>(
-                        HttpStatus.UNAUTHORIZED);
-            return new ResponseEntity<User>(
                     userRepository.find(id), HttpStatus.OK);
+            return new ResponseEntity<User>(
+                    HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<User>(
                     HttpStatus.BAD_REQUEST);
